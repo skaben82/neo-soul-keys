@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16111c">
+<title>Neo-Soul Keys</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a practice desk. Session timeline across the top, lesson panel + keyboard as the main column, course and history in a side rail. */
+:root{
+  --bg:#f2eef5; --surface:#fbf9fc; --surface-2:#ece6f0; --ink:#271d30; --muted:#6c6077; --line:#dcd3e3;
+  --accent:#a8651a; --accent-ink:#fff8ef; --lh:#23756f; --rh:#b8701a; --ok:#3a8748; --bad:#b2443a;
+  --key-w:#fffdf8; --key-w-edge:#d6cfdb; --key-b:#2a2130; --key-b-top:#3d3245; --down:#7b5aa0;
+  --display:"Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --body:"Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#16111c; --surface:#201928; --surface-2:#2a2233; --ink:#efe8f3; --muted:#a698b2; --line:#382e43;
+  --accent:#e3a548; --accent-ink:#1d1405; --lh:#5cc3b8; --rh:#e3a548; --ok:#6fc77d; --bad:#e2766b;
+  --key-w:#e8e1ea; --key-w-edge:#b3a9ba; --key-b:#0e0a12; --key-b-top:#2a2131; --down:#a989cf; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#16111c; --surface:#201928; --surface-2:#2a2233; --ink:#efe8f3; --muted:#a698b2; --line:#382e43;
+  --accent:#e3a548; --accent-ink:#1d1405; --lh:#5cc3b8; --rh:#e3a548; --ok:#6fc77d; --bad:#e2766b;
+  --key-w:#e8e1ea; --key-w-edge:#b3a9ba; --key-b:#0e0a12; --key-b-top:#2a2131; --down:#a989cf; color-scheme:dark }
+*,*::before,*::after{box-sizing:border-box}
+:root{color-scheme:light; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+html,body{background:var(--bg); margin:0}
+body{-webkit-text-size-adjust:100%}
+body{color:var(--ink); font-family:var(--body); font-size:15px; line-height:1.55;
+  padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); padding-block:20px 40px}
+.wrap{max-width:1180px; margin:0 auto; display:flex; flex-direction:column; gap:18px}
+.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+button{font:inherit; color:inherit; cursor:pointer}
+button:focus-visible, select:focus-visible, input:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+h1,h2,h3{margin:0; text-wrap:balance}
+
+/* top */
+.top{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:12px}
+.brand h1{font-family:var(--display); font-weight:400; font-size:clamp(2.1rem,5vw,3rem); line-height:1; letter-spacing:-.01em}
+.brand h1 em{color:var(--accent)}
+.sub{margin:6px 0 0; color:var(--muted); font-size:.92rem}
+.chips{display:flex; flex-wrap:wrap; gap:8px}
+.chip{display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border-radius:999px; background:var(--surface-2); font-size:.82rem; color:var(--muted)}
+.chip b{color:var(--ink); font-weight:600}
+.dot{width:8px; height:8px; border-radius:50%; background:var(--muted); flex:none}
+.dot.live{background:var(--ok)} .dot.warn{background:var(--accent)}
+.chip button{background:none; border:0; padding:0; color:var(--accent); font-weight:600; text-decoration:underline; text-underline-offset:2px}
+
+/* session timeline */
+.session{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; display:flex; flex-wrap:wrap; gap:14px; align-items:center}
+.segs{flex:1 1 420px; display:flex; gap:6px; min-width:0}
+.seg{position:relative; border:0; background:var(--surface-2); border-radius:9px; padding:9px 10px 8px; text-align:left; overflow:hidden; min-width:0}
+.seg .fill{position:absolute; inset:0 auto 0 0; background:color-mix(in srgb, var(--accent) 22%, transparent); width:0; transition:width .4s linear}
+.seg span{position:relative; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.seg .nm{font-weight:600; font-size:.88rem}
+.seg .mins{font-family:var(--mono); font-size:.72rem; color:var(--muted)}
+.seg.active{box-shadow:inset 0 0 0 2px var(--accent)}
+.seg.done .nm::after{content:" ✓"; color:var(--ok)}
+.clock{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+#clock{font-size:1.9rem; font-weight:600; min-width:5.2ch}
+.btn{border:1px solid var(--line); background:var(--surface); border-radius:9px; padding:8px 14px; font-weight:600; font-size:.88rem}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+.btn.small{padding:5px 10px; font-size:.8rem}
+.btn:disabled{opacity:.45; cursor:default}
+
+/* main grid */
+.grid{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:18px; align-items:start}
+@media (max-width:900px){ .grid{grid-template-columns:minmax(0,1fr)} }
+.main{display:flex; flex-direction:column; gap:14px; min-width:0}
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px; min-width:0; transition:box-shadow .25s}
+.panel.flash-ok{box-shadow:0 0 0 3px var(--ok)}
+.panel.flash-bad{box-shadow:0 0 0 3px var(--bad)}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); font-weight:600}
+.panel h2{font-family:var(--display); font-weight:400; font-size:clamp(1.6rem,3.6vw,2.2rem); line-height:1.1; margin:4px 0 10px}
+.panel p{margin:0 0 10px; max-width:64ch}
+.big-chord{font-family:var(--display); font-size:clamp(3rem,9vw,4.8rem); line-height:1; margin:6px 0 4px}
+.spell{font-family:var(--mono); font-size:.9rem; color:var(--muted); display:flex; flex-wrap:wrap; gap:14px}
+.spell .l{color:var(--lh)} .spell .r{color:var(--rh)}
+.row{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:14px}
+.tabs{display:flex; flex-wrap:wrap; gap:6px; margin:14px 0 4px}
+.tab{border:1px solid var(--line); background:transparent; border-radius:8px; padding:6px 12px; font-family:var(--mono); font-size:.85rem}
+.tab.on{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.reps{display:flex; gap:5px} .reps i{width:12px; height:12px; border-radius:50%; border:1.5px solid var(--line)} .reps i.y{background:var(--ok); border-color:var(--ok)}
+.note{font-size:.85rem; color:var(--muted)}
+.callout{margin-top:14px; padding:10px 12px; background:var(--surface-2); border-radius:9px; font-size:.88rem}
+.callout b{font-weight:600}
+
+/* groove bars */
+.bars{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin-top:12px}
+.bar{background:var(--surface-2); border-radius:9px; padding:10px 8px; text-align:center; position:relative}
+.bar .c{font-family:var(--mono); font-weight:600; font-size:.95rem}
+.bar .beats{display:flex; justify-content:center; gap:4px; margin-top:7px}
+.bar .beats i{width:6px; height:6px; border-radius:50%; background:var(--line)}
+.bar.now{box-shadow:inset 0 0 0 2px var(--accent)}
+.bar.now .beats i.on{background:var(--accent)}
+.bar.hit::after{content:"✓"; position:absolute; top:4px; right:7px; color:var(--ok); font-size:.8rem}
+.stat{font-family:var(--mono); font-size:.9rem}
+
+/* riff */
+.riff{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
+.rn{font-family:var(--mono); min-width:44px; text-align:center; padding:8px 6px; border-radius:8px; background:var(--surface-2); font-weight:600}
+.rn.done{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--ok)}
+.rn.cur{background:var(--rh); color:var(--accent-ink)}
+
+/* keyboard */
+.kb-card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; min-width:0}
+.kb-head{display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; align-items:center; margin-bottom:10px; font-size:.8rem; color:var(--muted)}
+.legend{display:flex; gap:12px; flex-wrap:wrap}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.sw{width:12px; height:12px; border-radius:3px}
+.kb-scroll{overflow-x:auto; padding-bottom:4px}
+.kb{position:relative; height:var(--kh,150px); margin:0 auto; user-select:none; -webkit-user-select:none}
+.key{position:absolute; top:0; touch-action:none; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding-bottom:6px; box-sizing:border-box}
+.key.white{width:calc(var(--w) - 2px); height:100%; background:var(--key-w); border:1px solid var(--key-w-edge); border-top:0; border-radius:0 0 6px 6px; z-index:1}
+.key.black{width:calc(var(--w) * .62); height:62%; background:linear-gradient(var(--key-b-top), var(--key-b)); border-radius:0 0 4px 4px; z-index:2}
+.key .lbl{font-family:var(--mono); font-size:.68rem; font-weight:600; line-height:1; padding:3px 2px; border-radius:4px; min-height:1em}
+.key .oct{position:absolute; bottom:-1px; left:2px; font-family:var(--mono); font-size:.55rem; color:#8a7f92; display:none}
+.key.white .oct{display:block; bottom:auto; top:4px}
+.key.lh{background:color-mix(in srgb, var(--lh) 32%, var(--key-w))}
+.key.rh{background:color-mix(in srgb, var(--rh) 34%, var(--key-w))}
+.key.black.lh{background:var(--lh)} .key.black.rh{background:var(--rh)}
+.key.lh .lbl, .key.rh .lbl{color:#1b141f}
+.key.black.lh .lbl, .key.black.rh .lbl{color:#fff}
+.key.next2{box-shadow:inset 0 -5px 0 color-mix(in srgb, var(--rh) 45%, transparent)}
+.key.down{background:var(--down)!important}
+.key.down .lbl{color:#fff}
+.key.down.lh, .key.down.rh{background:var(--ok)!important}
+
+/* change trainer */
+.key .fg{font-family:var(--mono); font-size:.74rem; font-weight:700; line-height:1; margin-bottom:3px; min-height:.8em; color:#1b141f}
+.key.black .fg{color:#fff}
+.key.stay{box-shadow:inset 0 0 0 3px var(--ink)}
+.key.white.from{background:repeating-linear-gradient(45deg, var(--key-w) 0 4px, color-mix(in srgb, var(--muted) 45%, var(--key-w)) 4px 8px)}
+.key.black.from{background:repeating-linear-gradient(45deg, var(--key-b) 0 4px, #6b5d75 4px 8px)}
+.sw-stay{background:var(--key-w); box-shadow:inset 0 0 0 2px var(--ink)}
+.sw-from{background:repeating-linear-gradient(45deg, var(--key-w) 0 3px, var(--muted) 3px 5px)}
+.change-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-top:10px}
+.change-head .from-c{font-family:var(--display); font-size:1.9rem; color:var(--muted)}
+.change-head .arrow{color:var(--muted); font-size:1.5rem}
+.change-head .big-chord{margin:0}
+.moves{display:flex; flex-direction:column; gap:4px; margin-top:12px; max-width:540px}
+.mv{display:grid; grid-template-columns:128px minmax(0,1fr); gap:10px; padding:7px 10px; border-radius:8px; background:var(--surface-2); font-size:.88rem}
+.mv .who{color:var(--muted); font-weight:600}
+.mv.stay .what, .mv.lift .what{color:var(--muted)}
+.mv.move .what{font-weight:600}
+.mv.move .what::before{content:"● "; color:var(--rh)}
+.cstats{margin-top:12px; font-size:.88rem}
+.gaps{position:relative; height:52px; display:flex; align-items:flex-end; gap:4px; margin-top:10px; border-bottom:1px solid var(--line); max-width:540px}
+.gaps i{width:14px; flex:none; background:var(--bad); border-radius:3px 3px 0 0; min-height:3px}
+.gaps i.ok{background:var(--ok)}
+.gline{position:absolute; left:0; right:0; bottom:33.3%; border-top:1px dashed var(--muted)}
+.gaps-lbl{font-size:.72rem; color:var(--muted); margin-top:4px}
+.chip.nudge{background:var(--accent); color:var(--accent-ink)}
+
+/* side rail */
+.side{display:flex; flex-direction:column; gap:14px; min-width:0}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; min-width:0}
+.card h3{font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); font-weight:600; margin-bottom:10px}
+.days{display:grid; grid-template-columns:repeat(14,1fr); gap:4px}
+.days i{aspect-ratio:1; border-radius:4px; background:var(--surface-2); max-width:100%}
+.days i.l1{background:color-mix(in srgb,var(--accent) 35%, var(--surface-2))}
+.days i.l2{background:color-mix(in srgb,var(--accent) 65%, var(--surface-2))}
+.days i.l3{background:var(--accent)}
+.days i.today{outline:1.5px solid var(--ink); outline-offset:1px}
+.daylbl{display:flex; justify-content:space-between; font-size:.72rem; color:var(--muted); margin-top:6px}
+.course{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px}
+.course button{width:100%; display:grid; grid-template-columns:26px minmax(0,1fr) auto; gap:8px; align-items:baseline; text-align:left; background:none; border:0; padding:7px 6px; border-radius:8px}
+.course button:hover{background:var(--surface-2)}
+.course .n{font-family:var(--mono); font-size:.78rem; color:var(--muted)}
+.course .t{font-size:.88rem; font-weight:500; min-width:0}
+.course .s{font-size:.75rem; color:var(--muted)}
+.course .cur{background:var(--surface-2)}
+.course .cur .t{font-weight:700}
+.course .ok .s{color:var(--ok)}
+.set{display:flex; flex-direction:column; gap:10px; font-size:.86rem}
+.set label{display:flex; justify-content:space-between; align-items:center; gap:10px}
+.set select{font:inherit; background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:4px 6px; max-width:60%}
+.set input[type=range]{width:55%; accent-color:var(--accent)}
+.set input[type=checkbox]{accent-color:var(--accent); width:17px; height:17px}
+.sync{display:flex; flex-direction:column; gap:10px; font-size:.86rem}
+.sync input[type=email]{font:inherit; width:100%; background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:8px 10px}
+.sync .who{font-weight:600; word-break:break-all}
+.sync .msg{color:var(--muted); margin:0}
+.sync .msg.err{color:var(--bad)}
+.sync form{display:flex; flex-direction:column; gap:8px; margin:0}
+.banner{background:var(--ok); color:#fff; border-radius:10px; padding:10px 14px; font-weight:600}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Neo-Soul <em>Keys</em></h1>
+      <p class="sub" id="sub"></p>
+    </div>
+    <div class="chips">
+      <span class="chip" id="midiChip"><span class="dot"></span>Checking for keyboard…</span>
+      <span class="chip" id="soundChip" hidden><span class="dot warn"></span>Tap or click once to switch sound on</span>
+      <span class="chip" id="streakChip"></span>
+      <span class="chip" id="syncChip"><span class="dot"></span>Not synced</span>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="session" aria-label="Today's session">
+    <div class="segs" id="segs"></div>
+    <div class="clock">
+      <span id="clock" class="mono">05:00</span>
+      <button class="btn primary" id="startBtn">Start session</button>
+      <button class="btn ghost" id="resetBtn">Reset</button>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div class="main">
+      <section class="panel" id="panel" aria-live="polite"></section>
+      <section class="kb-card">
+        <div class="kb-head">
+          <div class="legend">
+            <span><i class="sw" style="background:var(--lh)"></i>Left hand</span>
+            <span><i class="sw" style="background:var(--rh)"></i>Right hand</span>
+            <span><i class="sw" style="background:var(--ok)"></i>Correct key down</span>
+            <span><i class="sw sw-stay"></i>Finger stays</span>
+            <span><i class="sw sw-from"></i>Finger leaves</span>
+          </div>
+          <span id="kbHint">Tap the keys, play your MIDI keyboard, or use A–K on your computer keyboard</span>
+        </div>
+        <div class="kb-scroll" id="kbScroll"><div class="kb" id="kb"></div></div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="card">
+        <h3>Sync</h3>
+        <div class="sync" id="syncBox">
+          <form id="signinForm">
+            <p class="msg">Sign in to keep your progress the same on your Mac mini, MacBook and iPad.</p>
+            <label for="email" class="note">Email</label>
+            <input type="email" id="email" autocomplete="email" required placeholder="you@example.com">
+            <button class="btn primary" type="submit" id="sendLink">Email me a sign-in link</button>
+          </form>
+          <div id="signedIn" hidden>
+            <div>Signed in as <span class="who" id="whoEmail"></span></div>
+            <p class="msg" id="syncMsg"></p>
+            <div class="row" style="margin-top:4px"><button class="btn small" type="button" id="syncNow">Sync now</button><button class="btn small ghost" type="button" id="signOut">Sign out</button></div>
+          </div>
+          <p class="msg" id="authMsg" hidden></p>
+        </div>
+      </section>
+      <section class="card">
+        <h3>Last 14 days</h3>
+        <div class="days" id="days"></div>
+        <div class="daylbl"><span id="dayFrom"></span><span>Today</span></div>
+      </section>
+      <section class="card">
+        <h3>Course</h3>
+        <ul class="course" id="course"></ul>
+      </section>
+      <section class="card">
+        <h3>Settings</h3>
+        <div class="set">
+          <label for="mode">Checking
+            <select id="mode">
+              <option value="octave">Right notes, any octave</option>
+              <option value="exact">Exact keys shown</option>
+              <option value="rh">Right hand only</option>
+            </select>
+          </label>
+          <label for="bpm">Tempo <span class="mono" id="bpmVal">70</span><input type="range" id="bpm" min="50" max="100" step="2"></label>
+          <label for="backing">Play the chords for me in Groove <input type="checkbox" id="backing"></label>
+          <label for="click">Metronome click <input type="checkbox" id="click"></label>
+          <label for="midiSound">Sound for my MIDI keyboard <input type="checkbox" id="midiSound"></label>
+          <label for="names">Show note names on keys <input type="checkbox" id="names"></label>
+          <p class="note" style="margin:0">Turn off "Sound for my MIDI keyboard" if GarageBand is already making the sound.</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script src="vendor/supabase-2.117.3.js"></script>
+<script>
+(function(){
+"use strict";
+/* ---------- music data ---------- */
+var NAMES=["C","D♭","D","E♭","E","F","F♯","G","A♭","A","B♭","B"];
+function nn(m){return NAMES[((m%12)+12)%12]}
+function nno(m){return nn(m)+(Math.floor(m/12)-1)}
+var LO=36, HI=84; // C2 to C6, matches a 49-key board
+
+var CH={
+  Cmaj7:{n:"Cmaj7", lh:[48], rh:[64,67,71]},
+  Am7:{n:"Am7", lh:[45], rh:[64,67,72]},
+  Dm7:{n:"Dm7", lh:[50], rh:[65,69,72]},
+  G7:{n:"G7", lh:[43], rh:[65,71,74]},
+  Fmaj7:{n:"Fmaj7", lh:[41], rh:[64,69,72]},
+  Em7:{n:"Em7", lh:[40], rh:[62,67,71]},
+  Cmaj9:{n:"Cmaj9", lh:[48], rh:[64,67,71,74]},
+  Dm9:{n:"Dm9", lh:[50], rh:[65,69,72,76]},
+  G13:{n:"G13", lh:[43], rh:[65,69,71,76]},
+  Am9:{n:"Am9", lh:[45], rh:[60,64,67,71]},
+  Dm9c:{n:"Dm9", lh:[50], rh:[60,64,65,69], alt:"close voicing"},
+  Dm11:{n:"Dm11", lh:[50,55], rh:[60,65,69]},
+  Dbmaj9:{n:"D♭maj9", lh:[49], rh:[65,68,72,75]},
+  Fmaj9:{n:"Fmaj9", lh:[41], rh:[64,67,69,72]},
+  Em9:{n:"Em9", lh:[40], rh:[62,66,67,71]},
+  Cmaj9l:{n:"Cmaj9", lh:[48], rh:[59,62,64,67], alt:"low voicing"}
+};
+
+var LESSONS=[
+ {t:"From triad to seventh", chords:["Cmaj7","Am7"], prog:["Cmaj7","Cmaj7","Am7","Am7"],
+  body:"You already know C major: C, E, G. Add B, the note just below the top C, and it becomes C major 7. That softer, dreamier sound is what neo-soul is built on. Do the same to A minor (A, C, E) by adding G and you get A minor 7.",
+  how:"Left hand plays the bottom note on its own. Right hand plays the rest as one shape. Press all the keys together, hold, release, repeat.",
+  riff:{name:"Cmaj7 rolled up and back", notes:[60,64,67,71,72,71,67,64], tip:"Play it slowly and evenly. Speed comes later; evenness doesn't."}},
+ {t:"Minor 7 and dominant 7", chords:["Dm7","G7","Cmaj7"], prog:["Dm7","G7","Cmaj7","Cmaj7"],
+  body:"Dm7 is D minor (D, F, A) plus C. G7 is G major (G, B, D) plus F. Those two pull towards C so strongly that soul and jazz players use them constantly. The pattern is called a two–five–one.",
+  how:"Watch your right hand between Dm7 and G7: F stays where it is and the other fingers only shift a little. Look for the smallest move, not a new hand position.",
+  riff:{name:"Dm7 arpeggio", notes:[62,65,69,72,69,65], tip:"Keep your wrist loose and let each finger fall onto its key."}},
+ {t:"The walk down", chords:["Fmaj7","Em7"], prog:["Fmaj7","Em7","Dm7","Cmaj7"],
+  body:"Add Fmaj7 and Em7 and you can walk the bass down F, E, D, C. That falling movement turns up in neo-soul tune after tune.",
+  how:"Right-hand shapes stay close together in the middle of the keyboard. Let the left hand do the walking.",
+  riff:{name:"Six-five-three run", notes:[69,67,64,62,60], tip:"A classic soul fill: A, G, E, D, C. Drop it in at the end of any C chord."}},
+ {t:"Add the ninth", chords:["Cmaj9","Dm9"], prog:["Dm9","Dm9","Cmaj9","Cmaj9"],
+  body:"Stack one more note on top of a seventh chord, the ninth, and you get the lush, open sound of D'Angelo and Erykah Badu records. Cmaj7 plus D gives Cmaj9. Dm7 plus E gives Dm9.",
+  how:"Your right hand now has four notes. Use fingers 1, 2, 3 and 5, and keep them curved.",
+  riff:{name:"Grace-note slide", notes:[63,64,67,69,72], tip:"Flick E♭ into E with the same finger, as one movement. That little smear is the neo-soul signature."}},
+ {t:"The neo-soul two–five–one", chords:["Dm9","G13","Cmaj9"], prog:["Dm9","G13","Cmaj9","Cmaj9"],
+  body:"The two–five–one from lesson 2, dressed up. G13 looks scary written down, but from Dm9 your right hand only changes one note: C drops to B. Moving as little as possible between chords is called voice leading, and it's why these progressions sound so smooth.",
+  how:"Play Dm9, then without lifting your whole hand, slide the C finger down to B. That's G13.",
+  riff:{name:"Run down and slide in", notes:[72,69,67,64,62,63,64], tip:"Ends with the grace-note slide from lesson 4."}},
+ {t:"The two-chord vamp", chords:["Am9","Dm9c"], prog:["Am9","Am9","Dm9c","Dm9c"],
+  body:"Plenty of neo-soul tunes sit on two chords for the whole song. Am9 to Dm9, back and forth. Here the right-hand shapes sit almost on top of each other.",
+  how:"Groove matters more than notes now. Try landing the right hand very slightly after the beat, lazy and relaxed.",
+  riff:{name:"Pentatonic answer", notes:[72,69,67,64,63,64,67,69], tip:"Play this in the gap between chord changes, like a reply."}},
+ {t:"Stacked fourths", chords:["Dm11"], prog:["Dm11","G13","Cmaj9","Cmaj9"],
+  body:"Dm11 is played as evenly spaced notes: D, G, C, F, A. It's the floating, open sound from modal jazz and it slots straight into a two–five–one.",
+  how:"Left hand now takes two notes, D and G. Right hand plays C, F and A.",
+  riff:{name:"Fourths up and back", notes:[62,67,72,67,62,60], tip:"Every jump is the same distance. Feel the spacing in your hand."}},
+ {t:"Slide in from above", chords:["Dbmaj9","Cmaj9"], prog:["Dm9","G13","Dbmaj9","Cmaj9"],
+  body:"Play the whole chord one key higher just before you land. D♭maj9 slipping down into Cmaj9 makes a plain ending sound expensive.",
+  how:"Same shape for both chords. Every finger drops one key, together.",
+  riff:{name:"Chromatic approach", notes:[61,62,64,67,69,72], tip:"Start a semitone below D and roll upwards."}},
+ {t:"The walk down, upgraded", chords:["Fmaj9","Em9","Dm9c","Cmaj9l"], prog:["Fmaj9","Em9","Dm9c","Cmaj9l"],
+  body:"Lesson 3's walk down, now with ninths. The right hand stays in one small area and the chords pour downwards. This is the one to noodle on when you just want to sound good.",
+  how:"Look for the shared notes between neighbouring chords and keep those fingers still.",
+  riff:{name:"Falling fill", notes:[76,74,72,69,67,64,63,64], tip:"Play it over the Cmaj9 bar, then go back to the top."}},
+ {t:"Put it together", chords:["Fmaj9","Em9","Dm9c","Cmaj9l","Am9","G13","Cmaj9"], prog:["Fmaj9","Em9","Dm9c","Cmaj9l","Am9","Dm9c","G13","Cmaj9"],
+  body:"Eight bars using everything so far. Once this feels comfortable, start playing with rhythm: hit chords early, leave gaps, drop riffs in between.",
+  how:"Turn off \"Play the chords for me\" in settings and play the whole thing yourself over the click.",
+  riff:{name:"The long fill", notes:[72,69,67,64,62,63,64,67,69,72], tip:"Joins the six-five-three run to the grace-note slide."}}
+];
+
+var BLOCKS=[
+ {k:"warm", nm:"Warm-up", min:4},
+ {k:"learn", nm:"Learn", min:7},
+ {k:"change", nm:"Changes", min:8},
+ {k:"groove", nm:"Groove", min:7},
+ {k:"riff", nm:"Riff", min:4}
+];
+
+/* ---------- saved state ---------- */
+var KEY="neo-soul-keys-v1";
+var S={current:0, done:[], days:{}, settings:{mode:"octave", bpm:70, backing:true, click:true, midiSound:true, names:true}};
+try{ var raw=localStorage.getItem(KEY); if(raw){ var p=JSON.parse(raw); S.current=p.current||0; S.done=p.done||[]; S.days=p.days||{}; for(var k in p.settings) S.settings[k]=p.settings[k]; } }catch(e){}
+try{ var rawT=localStorage.getItem(KEY); if(rawT){ var pT=JSON.parse(rawT); if(pT.updatedAt) S.updatedAt=pT.updatedAt; } }catch(e){}
+function saveLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function save(){ S.updatedAt=Date.now(); saveLocal(); queueSync(); }
+function dayKey(d){ d=d||new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+
+/* ---------- ui state ---------- */
+var U={block:0, remain:BLOCKS.map(function(b){return b.min*60}), running:false, warm:null, warmCount:0, learnSel:0, reps:{}, riffPos:0, riffLoops:0, armed:true, finished:false,
+  ch:{pair:0, side:0, holding:null, leftAt:null, times:[], best:null, count:0}};
+function bk(){ return BLOCKS[U.block].k; }
+function resetCh(keepPair){ U.ch={pair:keepPair?U.ch.pair:0, side:0, holding:null, leftAt:null, times:[], best:null, count:0}; }
+function lesson(){ return LESSONS[S.current]; }
+function $(id){ return document.getElementById(id); }
+
+/* ---------- audio ---------- */
+var ctx=null, master=null;
+function initAudio(){
+  if(!ctx){
+    var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    ctx=new AC();
+    master=ctx.createGain(); master.gain.value=.55;
+    var lp=ctx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=5200;
+    var trem=ctx.createGain(); trem.gain.value=.9;
+    var lfo=ctx.createOscillator(); lfo.frequency.value=4.6; var lg=ctx.createGain(); lg.gain.value=.1; lfo.connect(lg); lg.connect(trem.gain); lfo.start();
+    var comp=ctx.createDynamicsCompressor();
+    master.connect(lp); lp.connect(trem); trem.connect(comp); comp.connect(ctx.destination);
+  }
+  if(ctx.state==="suspended") ctx.resume();
+  setTimeout(soundChip,60);
+}
+function soundChip(){ var on=!!(ctx && ctx.state==="running"), el=$("soundChip"); el.hidden=on; if(on) el.classList.remove("nudge"); }
+function noteOn(m, vel, when){
+  if(!ctx) return null;
+  vel=vel==null?.8:vel; when=when||ctx.currentTime;
+  var f=440*Math.pow(2,(m-69)/12);
+  var car=ctx.createOscillator(); car.frequency.value=f;
+  var mod=ctx.createOscillator(); mod.frequency.value=f;
+  var mg=ctx.createGain(); mg.gain.setValueAtTime(f*1.4*vel,when); mg.gain.exponentialRampToValueAtTime(f*.12+1,when+.7);
+  mod.connect(mg); mg.connect(car.frequency);
+  var tine=ctx.createOscillator(); tine.frequency.value=f*7;
+  var tg=ctx.createGain(); tg.gain.setValueAtTime(.035*vel,when); tg.gain.exponentialRampToValueAtTime(.0001,when+.14); tine.connect(tg);
+  var env=ctx.createGain(); env.gain.setValueAtTime(0,when); env.gain.linearRampToValueAtTime(.2*vel,when+.006);
+  env.gain.exponentialRampToValueAtTime(.06*vel,when+1.3); env.gain.exponentialRampToValueAtTime(.0001,when+5);
+  car.connect(env); tg.connect(env); env.connect(master);
+  [car,mod,tine].forEach(function(o){ o.start(when); o.stop(when+5.1); });
+  return {release:function(t){
+    t=Math.max(t||ctx.currentTime, when+.01);
+    try{ if(env.gain.cancelAndHoldAtTime) env.gain.cancelAndHoldAtTime(t); else env.gain.cancelScheduledValues(t); }catch(e){}
+    env.gain.setTargetAtTime(0,t,.07);
+    [car,mod,tine].forEach(function(o){ try{o.stop(t+.6)}catch(e){} });
+  }};
+}
+function tick(when, accent){
+  if(!ctx) return;
+  var o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.value=accent?1600:1100;
+  g.gain.setValueAtTime(accent?.09:.05,when); g.gain.exponentialRampToValueAtTime(.0001,when+.04);
+  o.connect(g); g.connect(ctx.destination); o.start(when); o.stop(when+.05);
+}
+function playChord(id, vel, len, when){
+  var c=CH[id]; if(!ctx||!c) return [];
+  when=when||ctx.currentTime; var vs=[];
+  c.lh.concat(c.rh).forEach(function(m,i){ var v=noteOn(m,vel,when+i*.012); if(v){ v.release(when+len); vs.push(v);} });
+  return vs;
+}
+function playSeq(notes, gap){
+  if(!ctx) return; var t=ctx.currentTime+.05;
+  notes.forEach(function(m,i){ var v=noteOn(m,.8,t+i*gap); if(v) v.release(t+i*gap+gap*.95); });
+}
+function chime(){ if(!ctx) return; var t=ctx.currentTime; [76,83].forEach(function(m,i){ var v=noteOn(m,.6,t+i*.15); if(v) v.release(t+1.2); }); }
+
+/* ---------- held notes ---------- */
+var held=new Map(), voices=new Map(), sustain=false, sustained=new Set();
+function heldList(){ return Array.from(held.keys()); }
+function press(m, vel, src){
+  if(src==="midi" && (!ctx||ctx.state!=="running")){ var sc=$("soundChip"); sc.hidden=false; sc.classList.add("nudge"); }
+  held.set(m,(held.get(m)||0)+1);
+  if(src!=="midi"||S.settings.midiSound){
+    if(src!=="midi") initAudio();
+    var old=voices.get(m); if(old) old.release();
+    var v=noteOn(m, vel); if(v) voices.set(m,v);
+    sustained.delete(m);
+  }
+  onNoteOn(m); refresh();
+}
+function release(m){
+  var c=(held.get(m)||0)-1;
+  if(c<=0){ held.delete(m); var v=voices.get(m); if(v){ if(sustain) sustained.add(m); else { v.release(); voices.delete(m);} } }
+  else held.set(m,c);
+  refresh();
+}
+function setSustain(on){
+  sustain=on;
+  if(!on){ sustained.forEach(function(m){ if(!held.has(m)){ var v=voices.get(m); if(v){ v.release(); voices.delete(m);} } }); sustained.clear(); }
+}
+
+/* ---------- matching ---------- */
+function pcs(arr){ var s=new Set(); arr.forEach(function(m){ s.add(((m%12)+12)%12); }); return s; }
+function sameSet(a,b){ if(a.size!==b.size) return false; var ok=true; a.forEach(function(x){ if(!b.has(x)) ok=false; }); return ok; }
+function matches(c){
+  var h=heldList(); if(!h.length) return false;
+  var all=c.lh.concat(c.rh), mode=S.settings.mode;
+  if(mode==="exact") return sameSet(new Set(h), new Set(all));
+  var hp=pcs(h);
+  if(mode==="octave") return sameSet(hp, pcs(all));
+  var allp=pcs(all), rhp=pcs(c.rh), ok=true;
+  rhp.forEach(function(x){ if(!hp.has(x)) ok=false; });
+  hp.forEach(function(x){ if(!allp.has(x)) ok=false; });
+  return ok;
+}
+function noteMatch(a,b){ return S.settings.mode==="exact" ? a===b : (a%12)===(b%12); }
+
+/* chord pairs worth drilling: each change in the lesson's progression, once */
+function changePairs(){
+  var L=lesson(), p=L.prog, out=[], seen={};
+  for(var i=0;i<p.length;i++){
+    var a=p[i], b=p[(i+1)%p.length]; if(a===b) continue;
+    var key=[a,b].sort().join("|"); if(seen[key]) continue; seen[key]=1; out.push([a,b]);
+  }
+  if(!out.length && L.chords.length>1) out.push([L.chords[0],L.chords[1]]);
+  return out;
+}
+function currentPair(){ var ps=changePairs(); return ps[U.ch.pair]||ps[0]||null; }
+/* standard fingering: right hand 1-3-5 or 1-2-3-5, left hand little finger on the bass */
+function fingers(c){
+  return {lh: c.lh.length===1?[5]:[5,2,1].slice(0,c.lh.length),
+          rh: c.rh.length===3?[1,3,5]:c.rh.length===4?[1,2,3,5]:[1,2,3,4,5].slice(0,c.rh.length)};
+}
+function fingerMap(c){
+  var f=fingers(c), m={};
+  c.lh.forEach(function(n,i){ m[n]="L"+f.lh[i]; }); c.rh.forEach(function(n,i){ m[n]="R"+f.rh[i]; });
+  return m;
+}
+function targetId(){
+  var k=bk(), L=lesson();
+  if(k==="warm") return U.warm;
+  if(k==="learn") return L.chords[U.learnSel];
+  if(k==="change"){ var p=currentPair(); return p?p[U.ch.side]:null; }
+  if(k==="groove") return L.prog[G.bar>=0?G.bar%L.prog.length:0];
+  return null;
+}
+function chordTarget(){ var id=targetId(); return id?CH[id]:null; }
+function fromChord(){ var p=currentPair(); return (bk()==="change"&&p)?CH[p[1-U.ch.side]]:null; }
+function refresh(){ paintKeys(); checkMatch(); }
+function checkMatch(){
+  var k=bk();
+  if(k==="change"){ checkChange(); return; }
+  var c=chordTarget(); if(!c) return;
+  var ok=matches(c);
+  if(k==="warm"||k==="learn"){
+    if(ok && U.armed){ U.armed=false; chordSuccess(); }
+    else if(held.size===0) U.armed=true;
+  } else if(k==="groove" && G.playing && G.bar>=0 && ok && !G.hits.has(G.bar)){
+    G.hits.add(G.bar); renderGrooveLive();
+  }
+}
+/* times the gap from the moment one chord breaks to the moment the next one is complete */
+function checkChange(){
+  var p=currentPair(); if(!p) return;
+  var C=U.ch;
+  if(C.holding && !matches(CH[C.holding])){ C.holding=null; if(C.leftAt==null) C.leftAt=performance.now(); }
+  var id=p[C.side];
+  if(!C.holding && matches(CH[id])){
+    var now=performance.now();
+    if(C.leftAt!=null){
+      var g=(now-C.leftAt)/1000; C.times.push(g); if(C.times.length>40) C.times.shift();
+      if(C.best==null||g<C.best) C.best=g;
+    }
+    C.count++; C.holding=id; C.leftAt=null; C.side=1-C.side;
+    flash("ok"); renderPanel(); paintKeys();
+  }
+}
+function flash(kind){ var p=$("panel"); p.classList.remove("flash-ok","flash-bad"); void p.offsetWidth; p.classList.add(kind==="ok"?"flash-ok":"flash-bad"); setTimeout(function(){ p.classList.remove("flash-ok","flash-bad"); },450); }
+function chordSuccess(){
+  flash("ok");
+  if(bk()==="warm"){ U.warmCount++; setTimeout(function(){ pickWarm(); render(); },550); }
+  else if(bk()==="learn"){
+    var L=lesson(), id=L.chords[U.learnSel]; U.reps[id]=(U.reps[id]||0)+1; render();
+    if(U.reps[id]===5 && U.learnSel<L.chords.length-1){ setTimeout(function(){ U.learnSel++; render(); },700); }
+  }
+}
+function onNoteOn(m){
+  if(bk()!=="riff") return;
+  var r=lesson().riff, exp=r.notes[U.riffPos];
+  if(noteMatch(m,exp)){
+    U.riffPos++;
+    if(U.riffPos>=r.notes.length){ U.riffPos=0; U.riffLoops++; flash("ok"); }
+    render();
+  } else if(held.size<=1){ flash("bad"); }
+}
+
+/* ---------- warm-up pool ---------- */
+function warmPool(){ var s=[]; for(var i=0;i<=S.current;i++) LESSONS[i].chords.forEach(function(c){ if(s.indexOf(c)<0) s.push(c); }); return s; }
+function pickWarm(){ var p=warmPool(), n; do{ n=p[Math.floor(Math.random()*p.length)]; }while(p.length>1 && n===U.warm); U.warm=n; U.armed=held.size===0; }
+
+/* ---------- groove engine ---------- */
+var G={playing:false, bar:-1, beat:0, next:0, nb:0, nbeat:0, q:[], hits:new Set(), timer:null, voices:[], played:0};
+function startGroove(){
+  initAudio(); if(!ctx) return;
+  G.playing=true; G.bar=-1; G.nb=0; G.nbeat=0; G.q=[]; G.hits=new Set(); G.voices=[]; G.played=0;
+  G.next=ctx.currentTime+.15;
+  G.timer=setInterval(schedule,25); schedule(); requestAnimationFrame(grooveFrame); render();
+}
+function stopGroove(){
+  G.playing=false; clearInterval(G.timer);
+  G.voices.forEach(function(v){ v.release(); }); G.voices=[]; G.bar=-1; render();
+}
+function schedule(){
+  var spb=60/S.settings.bpm, L=lesson();
+  while(G.next<ctx.currentTime+.12){
+    if(G.nbeat===0){
+      var id=L.prog[G.nb%L.prog.length]; G.q.push({t:G.next, bar:G.nb});
+      var len=spb*4-.06;
+      if(S.settings.backing) G.voices=G.voices.concat(playChord(id,.5,len,G.next));
+      else { var v=noteOn(CH[id].lh[0],.6,G.next); if(v){ v.release(G.next+len); G.voices.push(v);} }
+      if(G.voices.length>60) G.voices=G.voices.slice(-30);
+    }
+    if(S.settings.click) tick(G.next, G.nbeat===0);
+    G.next+=spb; G.nbeat++; if(G.nbeat===4){ G.nbeat=0; G.nb++; }
+  }
+}
+function grooveFrame(){
+  if(!G.playing) return;
+  var now=ctx.currentTime, spb=60/S.settings.bpm;
+  while(G.q.length>1 && G.q[1].t<=now) G.q.shift();
+  if(G.q.length && G.q[0].t<=now){
+    var b=G.q[0].bar, beat=Math.min(3,Math.floor((now-G.q[0].t)/spb));
+    if(b!==G.bar){ G.bar=b; G.played=b+1; paintKeys(); checkMatch(); }
+    if(beat!==G.beat){ G.beat=beat; }
+    renderGrooveLive();
+  }
+  requestAnimationFrame(grooveFrame);
+}
+
+/* ---------- session timer ---------- */
+var lastT=0, timerId=null, unsaved=0;
+function startTimer(){ initAudio(); U.running=true; U.finished=false; $("banner").hidden=true; lastT=Date.now(); timerId=setInterval(timerTick,500); renderSession(); }
+function pauseTimer(){ U.running=false; clearInterval(timerId); flushTime(); renderSession(); }
+function timerTick(){
+  var now=Date.now(), d=(now-lastT)/1000; lastT=now;
+  U.remain[U.block]=Math.max(0,U.remain[U.block]-d); unsaved+=d;
+  if(unsaved>=10) flushTime();
+  if(U.remain[U.block]<=0){
+    chime();
+    var nxt=-1; for(var i=U.block+1;i<BLOCKS.length;i++){ if(U.remain[i]>0){ nxt=i; break; } }
+    if(nxt<0){ pauseTimer(); U.finished=true; var b=$("banner"); b.textContent="Session done. Half an hour logged. Same time tomorrow."; b.hidden=false; renderHistory(); }
+    else goBlock(nxt);
+  }
+  renderSession();
+}
+function flushTime(){ if(unsaved<=0) return; var k=dayKey(); S.days[k]=(S.days[k]||0)+unsaved; unsaved=0; save(); renderHistory(); }
+function fmt(s){ s=Math.ceil(s); return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
+function goBlock(i){
+  if(G.playing && BLOCKS[i].k!=="groove") stopGroove();
+  U.block=i; U.armed=held.size===0; U.ch.holding=null; U.ch.leftAt=null;
+  if(BLOCKS[i].k==="warm"&&!U.warm) pickWarm(); render();
+}
+
+/* ---------- rendering ---------- */
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+function spell(c){
+  return '<div class="spell"><span class="l">Left: '+c.lh.map(nno).join(" ")+'</span><span class="r">Right: '+c.rh.map(nno).join(" ")+'</span>'+(c.alt?'<span>('+c.alt+')</span>':'')+'</div>';
+}
+function render(){ renderSession(); renderPanel(); renderCourse(); paintKeys(); }
+function renderSession(){
+  $("segs").innerHTML=BLOCKS.map(function(b,i){
+    var tot=b.min*60, pct=100*(1-U.remain[i]/tot);
+    return '<button class="seg'+(i===U.block?' active':'')+(U.remain[i]<=0?' done':'')+'" style="flex:'+b.min+'" data-block="'+i+'"><i class="fill" style="width:'+pct+'%"></i><span class="nm">'+b.nm+'</span><span class="mins">'+b.min+' min</span></button>';
+  }).join("");
+  $("clock").textContent=fmt(U.remain[U.block]);
+  $("startBtn").textContent=U.running?"Pause":(U.remain.some(function(r,i){return r<BLOCKS[i].min*60})?"Resume":"Start session");
+  $("sub").textContent="Lesson "+(S.current+1)+" of "+LESSONS.length+" · "+lesson().t;
+}
+var FN={1:"thumb",2:"finger 2",3:"finger 3",4:"finger 4",5:"little finger"};
+function keysTxt(d){ var a=Math.abs(d); return (d>0?"up ":"down ")+a+" key"+(a>1?"s":""); }
+function moveRows(fr,to){
+  var a=fingerMap(fr), b=fingerMap(to), byA={}, byB={}, rows=[];
+  Object.keys(a).forEach(function(n){ byA[a[n]]=+n; }); Object.keys(b).forEach(function(n){ byB[b[n]]=+n; });
+  ["R1","R2","R3","R4","R5","L5","L2","L1"].forEach(function(f){
+    var x=byA[f], y=byB[f]; if(x==null&&y==null) return;
+    var who=(f[0]==="R"?"Right ":"Left ")+FN[+f[1]], what, cls;
+    if(x!=null&&y!=null){
+      if(x===y){ what="stays on "+nn(y); cls="stay"; }
+      else { what=nn(x)+" → "+nn(y)+", "+keysTxt(y-x); cls="move"; }
+    } else if(y!=null){ what="comes in on "+nn(y); cls="move"; }
+    else { what="lifts off "+nn(x); cls="lift"; }
+    rows.push({who:who, what:what, cls:cls});
+  });
+  return rows;
+}
+function renderChange(){
+  var ps=changePairs();
+  if(!ps.length) return '<div class="eyebrow">Changes</div><h2>No chord changes in this lesson</h2>';
+  var p=currentPair(), to=CH[p[U.ch.side]], fr=CH[p[1-U.ch.side]], C=U.ch;
+  var rows=moveRows(fr,to), moving=rows.filter(function(r){return r.cls==="move"}).length;
+  var h='<div class="eyebrow">Changes · finger numbers are on the keys</div><h2>Move only what has to move</h2>'+
+    '<p>Play the two chords back and forth. The timer measures the gap between letting go of one chord and landing the next. A small gap matters more than speed.</p>'+
+    '<div class="tabs">'+ps.map(function(q,j){ return '<button class="tab'+(q===p?' on':'')+'" data-pair="'+j+'">'+esc(CH[q[0]].n)+' ⇄ '+esc(CH[q[1]].n)+'</button>'; }).join("")+'</div>'+
+    '<div class="change-head"><span class="from-c">'+esc(fr.n)+'</span><span class="arrow">→</span><span class="big-chord">'+esc(to.n)+'</span></div>'+
+    '<div class="note">'+moving+' of '+rows.length+' fingers move</div>'+
+    '<div class="moves">'+rows.map(function(r){ return '<div class="mv '+r.cls+'"><span class="who">'+r.who+'</span><span class="what">'+esc(r.what)+'</span></div>'; }).join("")+'</div>'+
+    '<div class="row"><button class="btn" data-act="hearchange">Hear the change</button><button class="btn ghost" data-act="chreset">Clear times</button></div>';
+  if(C.times.length){
+    var last=C.times[C.times.length-1], streak=0;
+    for(var i=C.times.length-1;i>=0&&C.times[i]<.5;i--) streak++;
+    h+='<div class="cstats mono">Last gap '+last.toFixed(2)+' s · Best '+C.best.toFixed(2)+' s · Under half a second in a row: '+streak+'</div>'+
+      '<div class="gaps">'+C.times.slice(-24).map(function(g){ return '<i class="'+(g<.5?'ok':'')+'" style="height:'+Math.min(100,g/1.5*100)+'%" title="'+g.toFixed(2)+' s"></i>'; }).join("")+'<span class="gline"></span></div>'+
+      '<div class="gaps-lbl">Each bar is one change. Dashed line is half a second.</div>';
+  } else {
+    h+='<div class="cstats">Play '+esc(to.n)+' to begin, then change to '+esc(fr.n)+'.</div>';
+  }
+  h+='<div class="callout"><b>Before each move,</b> say which fingers stay. Try the change a few times without pressing the keys, then for real. Keep your fingertips on the keys between chords. Aim for ten changes in a row under half a second, then take this pair into Groove at 50 bpm.</div>';
+  return h;
+}
+function renderPanel(){
+  var L=lesson(), k=bk(), h="";
+  if(k==="change"){ $("panel").innerHTML=renderChange(); return; }
+  if(k==="warm"){
+    var c=CH[U.warm];
+    h='<div class="eyebrow">Warm-up · chords from lessons 1–'+(S.current+1)+'</div>'+
+      '<div class="big-chord">'+esc(c.n)+'</div>'+spell(c)+
+      '<div class="row"><button class="btn" data-act="hear">Hear it</button><button class="btn ghost" data-act="skip">Skip</button><span class="stat">Played correctly: '+U.warmCount+'</span></div>'+
+      '<div class="callout"><b>How this works.</b> Play the chord shown. Once it\'s right, a new one appears. Turn off note names in settings when you want to test yourself from memory.</div>';
+  } else if(k==="learn"){
+    var id=L.chords[U.learnSel], cc=CH[id], r=U.reps[id]||0, dots="";
+    for(var i=0;i<5;i++) dots+='<i class="'+(i<r?'y':'')+'"></i>';
+    h='<div class="eyebrow">Lesson '+(S.current+1)+'</div><h2>'+esc(L.t)+'</h2><p>'+esc(L.body)+'</p><p class="note">'+esc(L.how)+'</p>'+
+      '<div class="tabs">'+L.chords.map(function(cid,j){ return '<button class="tab'+(j===U.learnSel?' on':'')+'" data-sel="'+j+'">'+esc(CH[cid].n)+((U.reps[cid]||0)>=5?' ✓':'')+'</button>'; }).join("")+'</div>'+
+      '<div class="big-chord">'+esc(cc.n)+'</div>'+spell(cc)+
+      '<div class="row"><button class="btn" data-act="hear">Hear it</button><button class="btn ghost" data-act="roll">Hear it note by note</button><span class="reps" title="Five clean repetitions">'+dots+'</span></div>'+
+      '<div class="row"><button class="btn primary" data-act="lessondone">'+(S.current<LESSONS.length-1?'Lesson feels solid, move on':'Mark course complete')+'</button></div>';
+  } else if(k==="groove"){
+    h='<div class="eyebrow">Groove · '+S.settings.bpm+' bpm · one chord per bar</div><h2>Play along</h2>'+
+      '<p>Each box is one bar of four beats. Change chord on the first click of each bar. A tick appears when you catch the chord in time.</p>'+
+      '<div class="bars" id="bars"></div>'+
+      '<div class="row"><button class="btn primary" data-act="groove">'+(G.playing?'Stop':'Start the loop')+'</button><span class="stat" id="gstat"></span></div>'+
+      '<div class="callout"><b>Next step.</b> When you\'re catching most bars, untick "Play the chords for me" so only the bass note and click remain, and play the chords yourself.</div>';
+  } else {
+    var rf=L.riff;
+    h='<div class="eyebrow">Riff of the day</div><h2>'+esc(rf.name)+'</h2><p>'+esc(rf.tip)+'</p>'+
+      '<div class="riff">'+rf.notes.map(function(m,j){ return '<span class="rn'+(j<U.riffPos?' done':'')+(j===U.riffPos?' cur':'')+'">'+nn(m)+'</span>'; }).join("")+'</div>'+
+      '<div class="row"><button class="btn" data-act="hearriff">Hear it</button><button class="btn ghost" data-act="riffreset">Start again</button><span class="stat">Clean run-throughs: '+U.riffLoops+'</span></div>'+
+      '<div class="callout"><b>Aim.</b> Ten clean run-throughs, then nudge the tempo up a couple of notches in settings.</div>';
+  }
+  $("panel").innerHTML=h;
+  if(k==="groove") renderGrooveLive();
+}
+function renderGrooveLive(){
+  var el=$("bars"); if(!el) return;
+  var L=lesson(), n=L.prog.length, cur=G.playing&&G.bar>=0?G.bar%n:-1, loopStart=G.bar>=0?G.bar-cur:0;
+  el.style.gridTemplateColumns="repeat("+Math.min(4,n)+",minmax(0,1fr))";
+  el.innerHTML=L.prog.map(function(id,i){
+    var beats=""; for(var b=0;b<4;b++) beats+='<i class="'+(i===cur&&b<=G.beat?'on':'')+'"></i>';
+    var hit=G.hits.has(loopStart+i) && (i<=cur);
+    return '<div class="bar'+(i===cur?' now':'')+(hit?' hit':'')+'"><div class="c">'+esc(CH[id].n)+'</div><div class="beats">'+beats+'</div></div>';
+  }).join("");
+  var st=$("gstat"); if(st) st.textContent=G.played?("Caught "+G.hits.size+" of "+G.played+" bars"):"";
+}
+function renderCourse(){
+  $("course").innerHTML=LESSONS.map(function(L,i){
+    var done=S.done.indexOf(i)>=0, cur=i===S.current;
+    return '<li><button data-lesson="'+i+'" class="'+(cur?'cur ':'')+(done?'ok':'')+'"><span class="n">'+String(i+1).padStart(2,"0")+'</span><span class="t">'+esc(L.t)+'</span><span class="s">'+(cur?'Now':done?'Done':'')+'</span></button></li>';
+  }).join("");
+}
+function renderHistory(){
+  var out="", today=new Date(), streak=0, counting=true;
+  for(var i=13;i>=0;i--){
+    var d=new Date(today); d.setDate(today.getDate()-i);
+    var s=S.days[dayKey(d)]||0, lv=s>=1500?3:s>=600?2:s>=60?1:0;
+    out+='<i class="'+(lv?'l'+lv:'')+(i===0?' today':'')+'" title="'+d.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+': '+Math.round(s/60)+' min"></i>';
+  }
+  for(var j=0;j<400;j++){
+    var dd=new Date(today); dd.setDate(today.getDate()-j);
+    var sec=S.days[dayKey(dd)]||0;
+    if(sec>=300) streak++; else if(j===0) continue; else break;
+  }
+  $("days").innerHTML=out;
+  var from=new Date(today); from.setDate(today.getDate()-13);
+  $("dayFrom").textContent=from.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  var mins=Math.round((S.days[dayKey()]||0)/60);
+  $("streakChip").innerHTML='<b>'+streak+'</b> day streak · <b>'+mins+'</b> min today';
+}
+
+/* ---------- keyboard ---------- */
+var keyEls={}, W=34;
+var BLACK=[1,3,6,8,10];
+function buildKb(){
+  var sc=$("kbScroll"), avail=sc.clientWidth||900;
+  W=Math.max(26,Math.min(42,Math.floor(avail/29)));
+  var kb=$("kb"); kb.innerHTML=""; kb.style.setProperty("--w",W+"px"); kb.style.setProperty("--kh",Math.round(W*4.3)+"px");
+  var wi=0;
+  for(var m=LO;m<=HI;m++){
+    var pc=m%12, el=document.createElement("div"), blk=BLACK.indexOf(pc)>=0;
+    el.className="key "+(blk?"black":"white"); el.dataset.m=m;
+    el.style.left=blk?(wi*W-W*.31-1)+"px":(wi*W)+"px";
+    if(!blk) wi++;
+    el.innerHTML='<span class="fg"></span><span class="lbl"></span>'+(pc===0?'<span class="oct">C'+(m/12-1)+'</span>':'');
+    kb.appendChild(el); keyEls[m]=el;
+  }
+  kb.style.width=(wi*W)+"px";
+  paintKeys();
+}
+function paintKeys(){
+  var lh=[], rh=[], next2=null, k=bk(), tmap={}, pmap={}, showF=(k==="learn"||k==="change");
+  var c=chordTarget();
+  if(c){ lh=c.lh; rh=c.rh; tmap=fingerMap(c); }
+  else if(k==="riff"){ var r=lesson().riff; rh=[r.notes[U.riffPos]]; next2=r.notes[U.riffPos+1]; }
+  var fr=fromChord(); if(fr) pmap=fingerMap(fr);
+  for(var m=LO;m<=HI;m++){
+    var el=keyEls[m]; if(!el) continue;
+    var isL=lh.indexOf(m)>=0, isR=rh.indexOf(m)>=0;
+    var stay=fr&&tmap[m]&&pmap[m]===tmap[m], from=fr&&pmap[m]&&!tmap[m];
+    el.className="key "+(BLACK.indexOf(m%12)>=0?"black":"white")+(isL?" lh":"")+(isR?" rh":"")+(m===next2?" next2":"")+
+      (stay?" stay":"")+(from?" from":"")+(held.has(m)?" down":"");
+    el.querySelector(".fg").textContent=(showF&&tmap[m])?tmap[m].slice(1):"";
+    el.querySelector(".lbl").textContent=(S.settings.names&&(isL||isR))?nn(m):"";
+  }
+}
+var ptr=new Map();
+function kbDown(e){
+  var k=e.target.closest(".key"); if(!k) return;
+  e.preventDefault(); var m=+k.dataset.m;
+  try{ k.setPointerCapture(e.pointerId); }catch(_){}
+  ptr.set(e.pointerId,m); press(m,.75,"screen");
+}
+function kbUp(e){ if(!ptr.has(e.pointerId)) return; var m=ptr.get(e.pointerId); ptr.delete(e.pointerId); release(m); }
+
+/* computer keyboard: A row = white keys from C4, W row = black keys; Z/X shift octave */
+var KMAP={a:0,w:1,s:2,e:3,d:4,f:5,t:6,g:7,y:8,h:9,u:10,j:11,k:12,o:13,l:14,p:15,";":16};
+var kOct=0, kDown={};
+document.addEventListener("keydown",function(e){
+  if(e.metaKey||e.ctrlKey||e.altKey||/input|select|textarea/i.test(e.target.tagName)) return;
+  var k=e.key.toLowerCase();
+  if(k==="z"){ kOct=Math.max(-2,kOct-1); return; } if(k==="x"){ kOct=Math.min(1,kOct+1); return; }
+  if(!(k in KMAP)||e.repeat||kDown[k]!=null) return;
+  var m=60+KMAP[k]+kOct*12; if(m<LO||m>HI) return;
+  kDown[k]=m; press(m,.75,"keys");
+});
+document.addEventListener("keyup",function(e){ var k=e.key.toLowerCase(); if(kDown[k]!=null){ var m=kDown[k]; delete kDown[k]; release(m); } });
+
+/* ---------- MIDI ---------- */
+function midiChip(state, text){
+  $("midiChip").innerHTML='<span class="dot '+(state==="live"?"live":state==="warn"?"warn":"")+'"></span>'+text;
+}
+function initMidi(){
+  if(!navigator.requestMIDIAccess){
+    midiChip("warn","This browser can't hear your keyboard. Use Chrome on your Mac, or tap the keys here.");
+    return;
+  }
+  navigator.requestMIDIAccess().then(function(acc){
+    function hook(){
+      var names=[];
+      acc.inputs.forEach(function(inp){ inp.onmidimessage=onMidi; names.push(inp.name); });
+      if(names.length) midiChip("live","Listening: <b>"+esc(names.join(", "))+"</b>");
+      else midiChip("warn","No keyboard found. Plug one in and it will appear here.");
+    }
+    hook(); acc.onstatechange=hook;
+  }, function(){
+    midiChip("warn","Chrome blocked keyboard access. Click the icon at the right of the address bar, allow MIDI devices, then reload.");
+  });
+}
+function onMidi(ev){
+  var d=ev.data, st=d[0]&0xf0;
+  if(st===0x90&&d[2]>0){ if(d[1]>=LO-12&&d[1]<=HI+12) press(d[1], .35+d[2]/127*.65, "midi"); }
+  else if(st===0x80||(st===0x90&&d[2]===0)) { if(held.has(d[1])) release(d[1]); }
+  else if(st===0xb0&&d[1]===64) setSustain(d[2]>=64);
+}
+
+/* ---------- events ---------- */
+document.addEventListener("pointerdown",function(){ initAudio(); },{capture:true});
+$("kb").addEventListener("pointerdown",kbDown);
+window.addEventListener("pointerup",kbUp); window.addEventListener("pointercancel",kbUp);
+$("startBtn").addEventListener("click",function(){ U.running?pauseTimer():startTimer(); });
+$("resetBtn").addEventListener("click",function(){ pauseTimer(); U.remain=BLOCKS.map(function(b){return b.min*60}); U.block=0; U.finished=false; $("banner").hidden=true; render(); });
+$("segs").addEventListener("click",function(e){ var b=e.target.closest("[data-block]"); if(b) goBlock(+b.dataset.block); });
+$("course").addEventListener("click",function(e){
+  var b=e.target.closest("[data-lesson]"); if(!b) return;
+  if(G.playing) stopGroove();
+  S.current=+b.dataset.lesson; save(); U.learnSel=0; U.reps={}; U.riffPos=0; U.riffLoops=0; resetCh(false); pickWarm(); render();
+});
+$("panel").addEventListener("click",function(e){
+  var t=e.target.closest("[data-act],[data-sel],[data-pair]"); if(!t) return; initAudio();
+  if(t.dataset.sel!=null){ U.learnSel=+t.dataset.sel; U.armed=held.size===0; render(); return; }
+  if(t.dataset.pair!=null){ U.ch.pair=+t.dataset.pair; resetCh(true); render(); return; }
+  var a=t.dataset.act, c=chordTarget();
+  if(a==="hear"&&c) playChord(targetId(),.75,2.2);
+  if(a==="hearchange"&&ctx){ var p=currentPair(); if(p){ var t0=ctx.currentTime+.05; playChord(p[1-U.ch.side],.7,1.1,t0); playChord(p[U.ch.side],.7,1.8,t0+1.2); } }
+  if(a==="chreset"){ resetCh(true); render(); }
+  if(a==="roll"&&c) playSeq(c.lh.concat(c.rh),.45);
+  if(a==="skip"){ pickWarm(); render(); }
+  if(a==="groove"){ G.playing?stopGroove():startGroove(); }
+  if(a==="hearriff") playSeq(lesson().riff.notes,30/S.settings.bpm);
+  if(a==="riffreset"){ U.riffPos=0; render(); }
+  if(a==="lessondone"){
+    if(S.done.indexOf(S.current)<0) S.done.push(S.current);
+    if(S.current<LESSONS.length-1){ S.current++; U.learnSel=0; U.reps={}; U.riffPos=0; U.riffLoops=0; resetCh(false); }
+    save(); pickWarm(); render();
+  }
+});
+function bindSetting(id, key, kind){
+  var el=$(id);
+  if(kind==="check") el.checked=!!S.settings[key]; else el.value=S.settings[key];
+  el.addEventListener(kind==="range"?"input":"change",function(){
+    S.settings[key]=kind==="check"?el.checked:kind==="range"?+el.value:el.value;
+    if(id==="bpm") $("bpmVal").textContent=el.value;
+    save(); render();
+  });
+}
+bindSetting("mode","mode"); bindSetting("bpm","bpm","range"); bindSetting("backing","backing","check");
+bindSetting("click","click","check"); bindSetting("midiSound","midiSound","check"); bindSetting("names","names","check");
+$("bpmVal").textContent=S.settings.bpm;
+var rz; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(buildKb,120); });
+window.addEventListener("beforeunload",flushTime);
+document.addEventListener("visibilitychange",function(){ if(document.hidden) flushTime(); });
+
+/* ---------- sync (Supabase) ---------- */
+var SB_URL="https://iwdbaznejstrggxvjkmm.supabase.co";
+var SB_KEY="sb_publishable_Hr57RDn7ELU1dpB_cBGJ0w_CoLP1LRi";
+var sb=null, sbUser=null, syncTimer=null, syncing=false, syncAgain=false, lastSynced=null, syncErr=null;
+function syncChip(){
+  var el=$("syncChip");
+  if(!sb){ el.innerHTML='<span class="dot warn"></span>Sync unavailable'; return; }
+  if(!sbUser){ el.innerHTML='<span class="dot"></span>Not synced · sign in below'; return; }
+  if(syncErr){ el.innerHTML='<span class="dot warn"></span>Sync failed · will retry'; return; }
+  el.innerHTML='<span class="dot live"></span>'+(syncing?'Syncing…':lastSynced?'Synced '+lastSynced.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):'Synced');
+}
+function renderSync(){
+  syncChip();
+  $("signinForm").hidden=!!sbUser; $("signedIn").hidden=!sbUser;
+  if(sbUser){
+    $("whoEmail").textContent=sbUser.email||"";
+    $("syncMsg").textContent=syncErr?("Last sync failed: "+syncErr):lastSynced?("Last synced at "+lastSynced.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+". Your progress saves automatically."):"Getting your progress…";
+    $("syncMsg").className="msg"+(syncErr?" err":"");
+  }
+}
+function authMsg(text, err){ var m=$("authMsg"); m.textContent=text||""; m.hidden=!text; m.className="msg"+(err?" err":""); }
+/* combine two copies of progress: practice minutes keep the higher figure for each day,
+   finished lessons are combined, and the current lesson and settings come from whichever was changed last */
+function merge(a, b){
+  var out={days:{}, done:[]};
+  var newer=(b.updatedAt||0)>(a.updatedAt||0)?b:a;
+  out.current=newer.current||0;
+  out.settings=Object.assign({}, a.settings||{}, b.settings||{}, newer.settings||{});
+  out.updatedAt=Math.max(a.updatedAt||0, b.updatedAt||0);
+  [a.days||{}, b.days||{}].forEach(function(d){ for(var k in d) out.days[k]=Math.max(out.days[k]||0, d[k]||0); });
+  (a.done||[]).concat(b.done||[]).forEach(function(i){ if(out.done.indexOf(i)<0) out.done.push(i); });
+  out.done.sort(function(x,y){ return x-y; });
+  return out;
+}
+/* key-order-independent comparison, since the database reorders keys */
+function canon(v){
+  if(Array.isArray(v)) return "["+v.map(canon).join(",")+"]";
+  if(v&&typeof v==="object") return "{"+Object.keys(v).sort().map(function(k){ return JSON.stringify(k)+":"+canon(v[k]); }).join(",")+"}";
+  return JSON.stringify(v===undefined?null:v);
+}
+function applyState(m){
+  var lessonChanged=m.current!==S.current;
+  S.current=Math.min(m.current||0, LESSONS.length-1); S.done=m.done; S.days=m.days; S.updatedAt=m.updatedAt;
+  for(var k in m.settings) S.settings[k]=m.settings[k];
+  saveLocal(); syncInputs();
+  if(lessonChanged){ U.learnSel=0; U.reps={}; U.riffPos=0; U.riffLoops=0; resetCh(false); pickWarm(); }
+  render(); renderHistory();
+}
+function queueSync(){ if(!sbUser) return; clearTimeout(syncTimer); syncTimer=setTimeout(syncNow, 2500); }
+function syncNow(){
+  if(!sb||!sbUser) return Promise.resolve();
+  if(syncing){ syncAgain=true; return Promise.resolve(); }
+  syncing=true; syncChip(); var uid=sbUser.id;
+  return sb.from("progress").select("data").eq("user_id",uid).maybeSingle().then(function(r){
+    if(r.error) throw r.error;
+    var remote=r.data&&r.data.data?r.data.data:null;
+    var merged=merge(S, remote||{});
+    if(canon(merged)!==canon(S)) applyState(merged);
+    var changed=!remote||canon(merged)!==canon(remote);
+    if(!changed) return null;
+    return sb.from("progress").upsert({user_id:uid, data:merged, updated_at:new Date().toISOString()}).then(function(w){ if(w.error) throw w.error; });
+  }).then(function(){ syncErr=null; lastSynced=new Date(); }, function(e){ syncErr=(e&&e.message)||"connection problem"; setTimeout(queueSync, 20000); })
+  .then(function(){ syncing=false; renderSync(); if(syncAgain){ syncAgain=false; queueSync(); } });
+}
+function syncInputs(){
+  $("mode").value=S.settings.mode; $("bpm").value=S.settings.bpm; $("bpmVal").textContent=S.settings.bpm;
+  ["backing","click","midiSound","names"].forEach(function(id){ $(id).checked=!!S.settings[id]; });
+}
+function initSync(){
+  if(!window.supabase||!window.supabase.createClient){ renderSync(); authMsg("Sync couldn't load. Your progress is still saved on this device.", true); return; }
+  sb=window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"implicit"}});
+  sb.auth.onAuthStateChange(function(ev, session){
+    var was=sbUser&&sbUser.id; sbUser=session?session.user:null;
+    if(sbUser && was!==sbUser.id){ setTimeout(syncNow,0); authMsg(""); }
+    if(location.hash.indexOf("access_token")>=0) history.replaceState(null,"",location.pathname);
+    renderSync();
+  });
+  var hp=new URLSearchParams(location.hash.slice(1));
+  if(hp.get("error_description")){ authMsg("That sign-in link didn't work ("+hp.get("error_description").replace(/\+/g," ")+"). Send yourself a new one.", true); history.replaceState(null,"",location.pathname); }
+  renderSync();
+  $("signinForm").addEventListener("submit",function(e){
+    e.preventDefault(); var email=$("email").value.trim(); if(!email) return;
+    var btn=$("sendLink"); btn.disabled=true; btn.textContent="Sending…";
+    sb.auth.signInWithOtp({email:email, options:{emailRedirectTo:location.origin+location.pathname}}).then(function(r){
+      btn.disabled=false; btn.textContent="Email me a sign-in link";
+      if(r.error) authMsg("Couldn't send the link: "+r.error.message, true);
+      else authMsg("Link sent to "+email+". Open it on this device, in this browser.");
+    });
+  });
+  $("signOut").addEventListener("click",function(){ sb.auth.signOut().then(function(){ sbUser=null; lastSynced=null; syncErr=null; renderSync(); authMsg("Signed out. Progress stays on this device."); }); });
+  $("syncNow").addEventListener("click",function(){ syncNow(); });
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden && sbUser) syncNow(); });
+}
+
+/* ---------- go ---------- */
+pickWarm(); buildKb(); render(); renderHistory(); initMidi(); initSync();
+setTimeout(soundChip,300); $("soundChip").hidden=false;
+})();
+</script>
+</body>
+</html>
