@@ -269,6 +269,13 @@ h1,h2,h3{margin:0; text-wrap:balance}
       <section class="card">
         <h3>Settings</h3>
         <div class="set">
+          <label for="board">Keyboard
+            <select id="board">
+              <option value="auto">Detect automatically</option>
+              <option value="full">Keystudio 49 (full layout)</option>
+              <option value="mini">MPK mini (25 keys)</option>
+            </select>
+          </label>
           <label for="mode">Checking
             <select id="mode">
               <option value="octave">Right notes, any octave</option>
@@ -296,7 +303,7 @@ h1,h2,h3{margin:0; text-wrap:balance}
 var NAMES=["C","D♭","D","E♭","E","F","F♯","G","A♭","A","B♭","B"];
 function nn(m){return NAMES[((m%12)+12)%12]}
 function nno(m){return nn(m)+(Math.floor(m/12)-1)}
-var LO=36, HI=84; // C2 to C6, matches a 49-key board
+var LO=36, HI=84; // C2 to C6 on the full board; C3 to C5 on the MPK mini (see setBoard)
 
 var CH={
   Cmaj7:{n:"Cmaj7", lh:[48], rh:[64,67,71]},
@@ -316,6 +323,40 @@ var CH={
   Em9:{n:"Em9", lh:[40], rh:[62,66,67,71]},
   Cmaj9l:{n:"Cmaj9", lh:[48], rh:[59,62,64,67], alt:"low voicing"}
 };
+
+/* ---------- keyboard size ----------
+   Full board: chords as written, shown C2 to C6.
+   MPK mini: 25 keys, C3 to C5 (MIDI 48 to 72) with both octave lights off.
+   Chords are refitted into that range: any right-hand note above C5 drops an octave
+   (tucking it under the shape), and the bass goes in the bottom octave. */
+var MINI_LO=48, MINI_HI=72, fitCache={};
+function isMini(){ return BOARD==="mini"; }
+var BOARD="full";
+function fitChord(c){
+  var rh=[];
+  c.rh.forEach(function(n){ while(n>MINI_HI) n-=12; while(n<MINI_LO) n+=12; if(rh.indexOf(n)<0) rh.push(n); });
+  rh.sort(function(a,b){ return a-b; });
+  /* each bass note goes as high as it can while staying below the note above it, keeping left-hand jumps short */
+  var lh=[], ceil=rh[0], src=c.lh.slice().sort(function(a,b){ return b-a; });
+  src.forEach(function(n){
+    var pc=((n%12)+12)%12, b=MINI_LO+pc;
+    while(b+12<ceil) b+=12;
+    if(b>=ceil) b=MINI_LO+pc;
+    if(lh.indexOf(b)<0 && rh.indexOf(b)<0){ lh.push(b); ceil=Math.min(ceil,b); }
+  });
+  lh.sort(function(a,b){ return a-b; });
+  return {n:c.n, lh:lh, rh:rh, alt:c.alt};
+}
+function chd(id){
+  var c=CH[id]; if(!c||!isMini()) return c;
+  return fitCache[id]||(fitCache[id]=fitChord(c));
+}
+function riffNotes(){
+  var ns=lesson().riff["notes"]; if(!isMini()) return ns;
+  var hi=Math.max.apply(null,ns), lo=Math.min.apply(null,ns), sh=0;
+  while(hi+sh>MINI_HI && lo+sh-12>=MINI_LO) sh-=12;
+  return ns.map(function(n){ n+=sh; while(n>MINI_HI) n-=12; while(n<MINI_LO) n+=12; return n; });
+}
 
 var LESSONS=[
  {t:"From triad to seventh", chords:["Cmaj7","Am7"], prog:["Cmaj7","Cmaj7","Am7","Am7"],
@@ -370,7 +411,7 @@ var BLOCKS=[
 
 /* ---------- saved state ---------- */
 var KEY="neo-soul-keys-v1";
-var S={current:0, done:[], days:{}, settings:{mode:"octave", bpm:70, backing:true, click:true, midiSound:true, names:true}};
+var S={current:0, done:[], days:{}, settings:{board:"auto", mode:"octave", bpm:70, backing:true, click:true, midiSound:true, names:true}};
 try{ var raw=localStorage.getItem(KEY); if(raw){ var p=JSON.parse(raw); S.current=p.current||0; S.done=p.done||[]; S.days=p.days||{}; for(var k in p.settings) S.settings[k]=p.settings[k]; } }catch(e){}
 try{ var rawT=localStorage.getItem(KEY); if(rawT){ var pT=JSON.parse(rawT); if(pT.updatedAt) S.updatedAt=pT.updatedAt; } }catch(e){}
 function saveLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
@@ -430,7 +471,7 @@ function tick(when, accent){
   o.connect(g); g.connect(ctx.destination); o.start(when); o.stop(when+.05);
 }
 function playChord(id, vel, len, when){
-  var c=CH[id]; if(!ctx||!c) return [];
+  var c=chd(id); if(!ctx||!c) return [];
   when=when||ctx.currentTime; var vs=[];
   c.lh.concat(c.rh).forEach(function(m,i){ var v=noteOn(m,vel,when+i*.012); if(v){ v.release(when+len); vs.push(v);} });
   return vs;
@@ -511,8 +552,8 @@ function targetId(){
   if(k==="groove") return L.prog[G.bar>=0?G.bar%L.prog.length:0];
   return null;
 }
-function chordTarget(){ var id=targetId(); return id?CH[id]:null; }
-function fromChord(){ var p=currentPair(); return (bk()==="change"&&p)?CH[p[1-U.ch.side]]:null; }
+function chordTarget(){ var id=targetId(); return id?chd(id):null; }
+function fromChord(){ var p=currentPair(); return (bk()==="change"&&p)?chd(p[1-U.ch.side]):null; }
 function refresh(){ paintKeys(); checkMatch(); }
 function checkMatch(){
   var k=bk();
@@ -530,9 +571,9 @@ function checkMatch(){
 function checkChange(){
   var p=currentPair(); if(!p) return;
   var C=U.ch;
-  if(C.holding && !matches(CH[C.holding])){ C.holding=null; if(C.leftAt==null) C.leftAt=performance.now(); }
+  if(C.holding && !matches(chd(C.holding))){ C.holding=null; if(C.leftAt==null) C.leftAt=performance.now(); }
   var id=p[C.side];
-  if(!C.holding && matches(CH[id])){
+  if(!C.holding && matches(chd(id))){
     var now=performance.now();
     if(C.leftAt!=null){
       var g=(now-C.leftAt)/1000; C.times.push(g); if(C.times.length>40) C.times.shift();
@@ -553,10 +594,10 @@ function chordSuccess(){
 }
 function onNoteOn(m){
   if(bk()!=="riff") return;
-  var r=lesson().riff, exp=r.notes[U.riffPos];
+  var rn=riffNotes(), exp=rn[U.riffPos];
   if(noteMatch(m,exp)){
     U.riffPos++;
-    if(U.riffPos>=r.notes.length){ U.riffPos=0; U.riffLoops++; flash("ok"); }
+    if(U.riffPos>=rn.length){ U.riffPos=0; U.riffLoops++; flash("ok"); }
     render();
   } else if(held.size<=1){ flash("bad"); }
 }
@@ -584,7 +625,7 @@ function schedule(){
       var id=L.prog[G.nb%L.prog.length]; G.q.push({t:G.next, bar:G.nb});
       var len=spb*4-.06;
       if(S.settings.backing) G.voices=G.voices.concat(playChord(id,.5,len,G.next));
-      else { var v=noteOn(CH[id].lh[0],.6,G.next); if(v){ v.release(G.next+len); G.voices.push(v);} }
+      else { var v=noteOn(chd(id).lh[0],.6,G.next); if(v){ v.release(G.next+len); G.voices.push(v);} }
       if(G.voices.length>60) G.voices=G.voices.slice(-30);
     }
     if(S.settings.click) tick(G.next, G.nbeat===0);
@@ -663,11 +704,11 @@ function moveRows(fr,to){
 function renderChange(){
   var ps=changePairs();
   if(!ps.length) return '<div class="eyebrow">Changes</div><h2>No chord changes in this lesson</h2>';
-  var p=currentPair(), to=CH[p[U.ch.side]], fr=CH[p[1-U.ch.side]], C=U.ch;
+  var p=currentPair(), to=chd(p[U.ch.side]), fr=chd(p[1-U.ch.side]), C=U.ch;
   var rows=moveRows(fr,to), moving=rows.filter(function(r){return r.cls==="move"}).length;
   var h='<div class="eyebrow">Changes · finger numbers are on the keys</div><h2>Move only what has to move</h2>'+
     '<p>Play the two chords back and forth. The timer measures the gap between letting go of one chord and landing the next. A small gap matters more than speed.</p>'+
-    '<div class="tabs">'+ps.map(function(q,j){ return '<button class="tab'+(q===p?' on':'')+'" data-pair="'+j+'">'+esc(CH[q[0]].n)+' ⇄ '+esc(CH[q[1]].n)+'</button>'; }).join("")+'</div>'+
+    '<div class="tabs">'+ps.map(function(q,j){ return '<button class="tab'+(q===p?' on':'')+'" data-pair="'+j+'">'+esc(chd(q[0]).n)+' ⇄ '+esc(chd(q[1]).n)+'</button>'; }).join("")+'</div>'+
     '<div class="change-head"><span class="from-c">'+esc(fr.n)+'</span><span class="arrow">→</span><span class="big-chord">'+esc(to.n)+'</span></div>'+
     '<div class="note">'+moving+' of '+rows.length+' fingers move</div>'+
     '<div class="moves">'+rows.map(function(r){ return '<div class="mv '+r.cls+'"><span class="who">'+r.who+'</span><span class="what">'+esc(r.what)+'</span></div>'; }).join("")+'</div>'+
@@ -688,16 +729,16 @@ function renderPanel(){
   var L=lesson(), k=bk(), h="";
   if(k==="change"){ $("panel").innerHTML=renderChange(); return; }
   if(k==="warm"){
-    var c=CH[U.warm];
+    var c=chd(U.warm);
     h='<div class="eyebrow">Warm-up · chords from lessons 1–'+(S.current+1)+'</div>'+
       '<div class="big-chord">'+esc(c.n)+'</div>'+spell(c)+
       '<div class="row"><button class="btn" data-act="hear">Hear it</button><button class="btn ghost" data-act="skip">Skip</button><span class="stat">Played correctly: '+U.warmCount+'</span></div>'+
       '<div class="callout"><b>How this works.</b> Play the chord shown. Once it\'s right, a new one appears. Turn off note names in settings when you want to test yourself from memory.</div>';
   } else if(k==="learn"){
-    var id=L.chords[U.learnSel], cc=CH[id], r=U.reps[id]||0, dots="";
+    var id=L.chords[U.learnSel], cc=chd(id), r=U.reps[id]||0, dots="";
     for(var i=0;i<5;i++) dots+='<i class="'+(i<r?'y':'')+'"></i>';
     h='<div class="eyebrow">Lesson '+(S.current+1)+'</div><h2>'+esc(L.t)+'</h2><p>'+esc(L.body)+'</p><p class="note">'+esc(L.how)+'</p>'+
-      '<div class="tabs">'+L.chords.map(function(cid,j){ return '<button class="tab'+(j===U.learnSel?' on':'')+'" data-sel="'+j+'">'+esc(CH[cid].n)+((U.reps[cid]||0)>=5?' ✓':'')+'</button>'; }).join("")+'</div>'+
+      '<div class="tabs">'+L.chords.map(function(cid,j){ return '<button class="tab'+(j===U.learnSel?' on':'')+'" data-sel="'+j+'">'+esc(chd(cid).n)+((U.reps[cid]||0)>=5?' ✓':'')+'</button>'; }).join("")+'</div>'+
       '<div class="big-chord">'+esc(cc.n)+'</div>'+spell(cc)+
       '<div class="row"><button class="btn" data-act="hear">Hear it</button><button class="btn ghost" data-act="roll">Hear it note by note</button><span class="reps" title="Five clean repetitions">'+dots+'</span></div>'+
       '<div class="row"><button class="btn primary" data-act="lessondone">'+(S.current<LESSONS.length-1?'Lesson feels solid, move on':'Mark course complete')+'</button></div>';
@@ -710,7 +751,7 @@ function renderPanel(){
   } else {
     var rf=L.riff;
     h='<div class="eyebrow">Riff of the day</div><h2>'+esc(rf.name)+'</h2><p>'+esc(rf.tip)+'</p>'+
-      '<div class="riff">'+rf.notes.map(function(m,j){ return '<span class="rn'+(j<U.riffPos?' done':'')+(j===U.riffPos?' cur':'')+'">'+nn(m)+'</span>'; }).join("")+'</div>'+
+      '<div class="riff">'+riffNotes().map(function(m,j){ return '<span class="rn'+(j<U.riffPos?' done':'')+(j===U.riffPos?' cur':'')+'">'+nn(m)+'</span>'; }).join("")+'</div>'+
       '<div class="row"><button class="btn" data-act="hearriff">Hear it</button><button class="btn ghost" data-act="riffreset">Start again</button><span class="stat">Clean run-throughs: '+U.riffLoops+'</span></div>'+
       '<div class="callout"><b>Aim.</b> Ten clean run-throughs, then nudge the tempo up a couple of notches in settings.</div>';
   }
@@ -724,7 +765,7 @@ function renderGrooveLive(){
   el.innerHTML=L.prog.map(function(id,i){
     var beats=""; for(var b=0;b<4;b++) beats+='<i class="'+(i===cur&&b<=G.beat?'on':'')+'"></i>';
     var hit=G.hits.has(loopStart+i) && (i<=cur);
-    return '<div class="bar'+(i===cur?' now':'')+(hit?' hit':'')+'"><div class="c">'+esc(CH[id].n)+'</div><div class="beats">'+beats+'</div></div>';
+    return '<div class="bar'+(i===cur?' now':'')+(hit?' hit':'')+'"><div class="c">'+esc(chd(id).n)+'</div><div class="beats">'+beats+'</div></div>';
   }).join("");
   var st=$("gstat"); if(st) st.textContent=G.played?("Caught "+G.hits.size+" of "+G.played+" bars"):"";
 }
@@ -758,7 +799,11 @@ var keyEls={}, W=34;
 var BLACK=[1,3,6,8,10];
 function buildKb(){
   var sc=$("kbScroll"), avail=sc.clientWidth||900;
-  W=Math.max(26,Math.min(42,Math.floor(avail/29)));
+  var whites=0; for(var q=LO;q<=HI;q++) if(BLACK.indexOf(q%12)<0) whites++;
+  W=Math.max(26,Math.min(isMini()?64:42,Math.floor(avail/whites)));
+  $("kbHint").textContent=isMini()
+    ? "MPK mini layout: this matches your 25 keys with both octave lights off"
+    : "Tap the keys, play your MIDI keyboard, or use A–K on your computer keyboard";
   var kb=$("kb"); kb.innerHTML=""; kb.style.setProperty("--w",W+"px"); kb.style.setProperty("--kh",Math.round(W*4.3)+"px");
   var wi=0;
   for(var m=LO;m<=HI;m++){
@@ -776,7 +821,7 @@ function paintKeys(){
   var lh=[], rh=[], next2=null, k=bk(), tmap={}, pmap={}, showF=(k==="learn"||k==="change");
   var c=chordTarget();
   if(c){ lh=c.lh; rh=c.rh; tmap=fingerMap(c); }
-  else if(k==="riff"){ var r=lesson().riff; rh=[r.notes[U.riffPos]]; next2=r.notes[U.riffPos+1]; }
+  else if(k==="riff"){ var rn=riffNotes(); rh=[rn[U.riffPos]]; next2=rn[U.riffPos+1]; }
   var fr=fromChord(); if(fr) pmap=fingerMap(fr);
   for(var m=LO;m<=HI;m++){
     var el=keyEls[m]; if(!el) continue;
@@ -823,6 +868,7 @@ function initMidi(){
     function hook(){
       var names=[];
       acc.inputs.forEach(function(inp){ inp.onmidimessage=onMidi; names.push(inp.name); });
+      MIDI_NAMES=names; setBoard();
       if(names.length) midiChip("live","Listening: <b>"+esc(names.join(", "))+"</b>");
       else midiChip("warn","No keyboard found. Plug one in and it will appear here.");
     }
@@ -833,7 +879,7 @@ function initMidi(){
 }
 function onMidi(ev){
   var d=ev.data, st=d[0]&0xf0;
-  if(st===0x90&&d[2]>0){ if(d[1]>=LO-12&&d[1]<=HI+12) press(d[1], .35+d[2]/127*.65, "midi"); }
+  if(st===0x90&&d[2]>0){ press(d[1], .35+d[2]/127*.65, "midi"); }
   else if(st===0x80||(st===0x90&&d[2]===0)) { if(held.has(d[1])) release(d[1]); }
   else if(st===0xb0&&d[1]===64) setSustain(d[2]>=64);
 }
@@ -861,7 +907,7 @@ $("panel").addEventListener("click",function(e){
   if(a==="roll"&&c) playSeq(c.lh.concat(c.rh),.45);
   if(a==="skip"){ pickWarm(); render(); }
   if(a==="groove"){ G.playing?stopGroove():startGroove(); }
-  if(a==="hearriff") playSeq(lesson().riff.notes,30/S.settings.bpm);
+  if(a==="hearriff") playSeq(riffNotes(),30/S.settings.bpm);
   if(a==="riffreset"){ U.riffPos=0; render(); }
   if(a==="lessondone"){
     if(S.done.indexOf(S.current)<0) S.done.push(S.current);
@@ -869,16 +915,32 @@ $("panel").addEventListener("click",function(e){
     save(); pickWarm(); render();
   }
 });
+/* picks the layout: the saved choice, or in auto mode the MPK mini only when it is the only real keyboard plugged in */
+var MIDI_NAMES=[];
+function setBoard(){
+  var want=S.settings.board||"auto";
+  if(want==="auto"){
+    var real=MIDI_NAMES.filter(function(n){ return !/IAC|Network|Session|Through/i.test(n); });
+    var minis=real.filter(function(n){ return /MPK\s*mini/i.test(n); });
+    want=(minis.length && minis.length===real.length)?"mini":"full";
+  }
+  if(want===BOARD) return;
+  BOARD=want; LO=isMini()?MINI_LO:36; HI=isMini()?MINI_HI:84;
+  held.clear(); voices.forEach(function(v){ v.release(); }); voices.clear();
+  if(G.playing) stopGroove();
+  U.ch.holding=null; U.ch.leftAt=null; U.riffPos=0; U.armed=true;
+  buildKb(); render();
+}
 function bindSetting(id, key, kind){
   var el=$(id);
   if(kind==="check") el.checked=!!S.settings[key]; else el.value=S.settings[key];
   el.addEventListener(kind==="range"?"input":"change",function(){
     S.settings[key]=kind==="check"?el.checked:kind==="range"?+el.value:el.value;
     if(id==="bpm") $("bpmVal").textContent=el.value;
-    save(); render();
+    save(); if(key==="board") setBoard(); render();
   });
 }
-bindSetting("mode","mode"); bindSetting("bpm","bpm","range"); bindSetting("backing","backing","check");
+bindSetting("board","board"); bindSetting("mode","mode"); bindSetting("bpm","bpm","range"); bindSetting("backing","backing","check");
 bindSetting("click","click","check"); bindSetting("midiSound","midiSound","check"); bindSetting("names","names","check");
 $("bpmVal").textContent=S.settings.bpm;
 var rz; window.addEventListener("resize",function(){ clearTimeout(rz); rz=setTimeout(buildKb,120); });
@@ -950,6 +1012,7 @@ function syncNow(){
   .then(function(){ syncing=false; renderSync(); if(syncAgain){ syncAgain=false; queueSync(); } });
 }
 function syncInputs(){
+  $("board").value=S.settings.board||"auto"; setBoard();
   $("mode").value=S.settings.mode; $("bpm").value=S.settings.bpm; $("bpmVal").textContent=S.settings.bpm;
   ["backing","click","midiSound","names"].forEach(function(id){ $(id).checked=!!S.settings[id]; });
 }
@@ -980,7 +1043,7 @@ function initSync(){
 }
 
 /* ---------- go ---------- */
-pickWarm(); buildKb(); render(); renderHistory(); initMidi(); initSync();
+pickWarm(); buildKb(); setBoard(); render(); renderHistory(); initMidi(); initSync();
 setTimeout(soundChip,300); $("soundChip").hidden=false;
 })();
 </script>
